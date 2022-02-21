@@ -1,16 +1,21 @@
-//Initialisation du local storag
-onQuantiteeChange();
-getArticles();
+
+
+
+
+let produitLocalStorage = JSON.parse(localStorage.getItem("produit"));
+console.table('LOCAL STORAGE', produitLocalStorage);
+
+const positionEmptyCart = document.querySelector("#cart__items");
 
 async function getArticles() {
     var articlesCatch = await fetch("http://localhost:3000/api/products")
-    return await articlesCatch.json();   
+    return await articlesCatch.json();
 }
 
-let produitLocalStorage = JSON.parse(localStorage.getItem("produit"));
-    console.table(produitLocalStorage)
-const positionEmptyCart = document.querySelector("#cart__items"); 
-  
+async function getArticle(productId) {
+    var articlesCatch = await fetch("http://localhost:3000/api/products/" + productId)
+    return await articlesCatch.json();
+}
 
 //Crée la div img
 function createProductDivImg(produitLocalStorage) {
@@ -26,19 +31,22 @@ function createProductDivImg(produitLocalStorage) {
 
     return productDivImg;
 }
+
 //Affiche le panier
 async function afficherPanier() {
-    
+
     if (produitLocalStorage === null || produitLocalStorage === 0) {
         const emptyCart = `<p>Votre panier est vide</p>`;
         positionEmptyCart.innerHTML = emptyCart;
     } else {
         for (let produit in produitLocalStorage) {
+            let currentId = produitLocalStorage[produit].idProduit;
+
             // Mise en place de l'élément "article"
             let productArticle = document.createElement("article");
             document.querySelector("#cart__items").appendChild(productArticle);
             productArticle.className = "cart__item";
-            productArticle.setAttribute('data-id', produitLocalStorage[produit].idProduit);
+            productArticle.setAttribute('data-id', currentId);
 
             let productDivImg = createProductDivImg(produitLocalStorage[produit]);
             productArticle.appendChild(productDivImg);
@@ -67,11 +75,10 @@ async function afficherPanier() {
             // Mise en place de l'élément "product price"
             let productPrice = document.createElement("p");
             productItemContentTitlePrice.appendChild(productPrice);
-            getArticles().then(function(resultatAPI) {
-                const articles = resultatAPI;
-                for (let article in articles){ 
-            productPrice.innerHTML = resultatAPI[article].price+ " €";}})
-            
+            getArticle(currentId).then(function (resultatAPI) {
+                productPrice.innerHTML = resultatAPI.price + " €";
+            })
+
             // Mise en place de l'élément "div"
             let productItemContentSettings = document.createElement("div");
             productItemContent.appendChild(productItemContentSettings);
@@ -108,11 +115,10 @@ async function afficherPanier() {
             productSupprimer.className = "deleteItem";
             productSupprimer.innerHTML = "Supprimer";
         }
-        onQuantiteeChange();
         showTotalPrice();
         showTotalQuantity();
         deleteProduct();
-        
+
     }
 }
 
@@ -130,65 +136,72 @@ function showTotalQuantity() {
     let productTotalQuantity = document.getElementById('totalQuantity');
     productTotalQuantity.innerHTML = totalQtt;
 }
+
 //Affiche le prix total
 function showTotalPrice() {
-    getArticles().then(function(resultatAPI) {
+    getArticles().then(function (resultatAPI) {
         const articles = resultatAPI;
         for (let article in articles) {
 
-    var quantitees = document.getElementsByClassName('itemQuantity');
-    var nombreDelementDansLePanier = quantitees.length, // Récupération du prix
-        totalPrice = 0;
-    // Récupération du prix total
-    for (var i = 0; i < nombreDelementDansLePanier; ++i) {
-        totalPrice += (quantitees[i].valueAsNumber * resultatAPI[article].price);
-    }
+            var quantitees = document.getElementsByClassName('itemQuantity');
+            var nombreDelementDansLePanier = quantitees.length; // Récupération du prix
+            var totalPrice = 0;
+            // Récupération du prix total
+            for (var i = 0; i < nombreDelementDansLePanier; ++i) {
+                totalPrice += (quantitees[i].valueAsNumber * resultatAPI[article].price);
+            }
 
-    let productTotalPrice = document.getElementById('totalPrice');
-    productTotalPrice.innerHTML = totalPrice;
-    console.log(totalPrice);
-    
-}})}
+            let productTotalPrice = document.getElementById('totalPrice');
+            productTotalPrice.innerHTML = totalPrice;
+            console.log(totalPrice);
+
+        }
+    })
+}
+
 //Changement de quantité
-function onQuantiteeChange() {
+function addOnChangeListenerToQuantityInputs() {
     let qttModif = document.querySelectorAll(".itemQuantity");
 
     for (let k = 0; k < qttModif.length; k++) {
         qttModif[k].addEventListener("change", (event) => {
             event.preventDefault();
-    // Changement de l'élement en fonction de son id/couleur
-    let quantityModif = produitLocalStorage[k].quantiteProduit;
-    let qttModifValue = qttModif[k].valueAsNumber;
+            let idProduct = event.target.parentNode.parentNode.parentNode.parentNode.attributes['data-id'].value;
+            onQuantityChange(idProduct);
+        })
+    }
+}
 
-    const resultFind = produitLocalStorage.find((el) => el.qttModifValue !== quantityModif);
+function onQuantityChange(idProduct) {
 
-    resultFind.quantiteProduit = qttModifValue;
-    produitLocalStorage[k].quantiteProduit = resultFind.quantiteProduit;
+    const newLocalStorageValue = produitLocalStorage;
 
-    localStorage.setItem("produit", JSON.stringify(produitLocalStorage));
-    // reload la page
-    location.reload();
-})}}
+    newLocalStorageValue.find(el => el.idProduit === idProduct).quantiteProduit++;
+
+    localStorage.setItem("produit", JSON.stringify(newLocalStorageValue));
+    showTotalPrice();
+    showTotalQuantity();
+}
 
 
 // Suppression d'un produit
 function deleteProduct() {
     let btn_supprimer = document.querySelectorAll(".deleteItem");
 
-    for (let j = 0; j < btn_supprimer.length; j++){
-        btn_supprimer[j].addEventListener("click" , (event) => {
+    for (let j = 0; j < btn_supprimer.length; j++) {
+        btn_supprimer[j].addEventListener("click", (event) => {
             event.preventDefault();
 
             // Choix de l'élement a supp celon l'id/couleur
             let idDelete = produitLocalStorage[j].idProduit;
             let colorDelete = produitLocalStorage[j].couleurProduit;
 
-            produitLocalStorage = produitLocalStorage.filter( el => el.idProduit !== idDelete || el.couleurProduit !== colorDelete );
+            produitLocalStorage = produitLocalStorage.filter(el => el.idProduit !== idDelete || el.couleurProduit !== colorDelete);
 
             localStorage.setItem("produit", JSON.stringify(produitLocalStorage));
 
             // alerte de produit supprimer
-            
+
             location.reload();
             afficherPanier();
         })
@@ -221,6 +234,7 @@ function addVerificationListernerToForm() {
         validEmail(this);
     })
 }
+
 //Validation du prénom
 function validFirstName(inputFirstName) {
     let firstNameErrorMsg = inputFirstName.nextElementSibling;
@@ -231,6 +245,7 @@ function validFirstName(inputFirstName) {
         firstNameErrorMsg.innerHTML = 'Veuillez renseigner ce champ.';
     }
 }
+
 //Validation du nom
 function validLastName(inputLastName) {
     let lastNameErrorMsg = inputLastName.nextElementSibling;
@@ -241,6 +256,7 @@ function validLastName(inputLastName) {
         lastNameErrorMsg.innerHTML = 'Veuillez renseigner ce champ.';
     }
 }
+
 //Validation de la ville
 function validAddress(inputAddress) {
     let addressErrorMsg = inputAddress.nextElementSibling;
@@ -251,6 +267,7 @@ function validAddress(inputAddress) {
         addressErrorMsg.innerHTML = 'Veuillez renseigner ce champ.';
     }
 }
+
 //Validation de la ville
 function validCity(inputCity) {
     let cityErrorMsg = inputCity.nextElementSibling;
@@ -261,6 +278,7 @@ function validCity(inputCity) {
         cityErrorMsg.innerHTML = 'Veuillez renseigner ce champ.';
     }
 }
+
 //Validation de l'email
 function validEmail(inputEmail) {
     let emailRegExp = new RegExp('^[a-zA-Z0-9.-_]+[@]{1}[a-zA-Z0-9.-_]+[.]{1}[a-z]{2,10}$');
@@ -273,61 +291,62 @@ function validEmail(inputEmail) {
     }
 }
 
-function commanderLePanier(){ 
+function commanderLePanier() {
     //envois des infos au localstorage
     const btn_commander = document.getElementById("order");
-    
+
     //Ecouter le panier
     btn_commander.addEventListener("click", (event) => {
-    event.preventDefault();
-    console.log('Jai cliqué sur commandé !');
+        event.preventDefault();
+        console.log('Jai cliqué sur commandé !');
 
-    //Recupération des coordonnées du formulaire client
-    let inputName = document.getElementById('firstName');
-    let inputLastName = document.getElementById('lastName');
-    let inputAdress = document.getElementById('address');
-    let inputCity = document.getElementById('city');
-    let inputMail = document.getElementById('email');
+        //Recupération des coordonnées du formulaire client
+        let inputName = document.getElementById('firstName');
+        let inputLastName = document.getElementById('lastName');
+        let inputAdress = document.getElementById('address');
+        let inputCity = document.getElementById('city');
+        let inputMail = document.getElementById('email');
 
-    // Mise en place d'un aray
-    let idProducts = [];
-    for (let i = 0; i < produitLocalStorage.length; i++) {
-    idProducts.push(produitLocalStorage[i].idProduit);
-    }
-    console.log(idProducts);
-        
-    const order = {
-        contact: {
-            firstName: inputName.value,
-            lastName: inputLastName.value,
-            address: inputAdress.value,
-            city: inputCity.value,
-            email: inputMail.value,
-        },  
-        products: idProducts,
-    }
-    
-    const options = {
-        method: 'POST', body: JSON.stringify(order), headers: {
-            'Accept': "application/json", "Content-Type": "application/json"
-        },
-    };
-    fetch("http://localhost:3000/api/products/order", options)
-        .then((resp) => resp.json())
-        .then((data) => {
-            console.log("data",data);
-            localStorage.clear();
-            localStorage.setItem("orderId", data.orderId);
+        // Mise en place d'un aray
+        let idProducts = [];
+        for (let i = 0; i < produitLocalStorage.length; i++) {
+            idProducts.push(produitLocalStorage[i].idProduit);
+        }
+        console.log(idProducts);
 
-            document.location.href = 'confirmation.html?id='+ data.orderId
-        })
-        .catch((err) => {
-            alert("Erreur Fetch" + err.message);
-        });
-        })
+        const order = {
+            contact: {
+                firstName: inputName.value,
+                lastName: inputLastName.value,
+                address: inputAdress.value,
+                city: inputCity.value,
+                email: inputMail.value,
+            },
+            products: idProducts,
+        }
+
+        const options = {
+            method: 'POST', body: JSON.stringify(order), headers: {
+                'Accept': "application/json", "Content-Type": "application/json"
+            },
+        };
+        fetch("http://localhost:3000/api/products/order", options)
+            .then((resp) => resp.json())
+            .then((data) => {
+                console.log("data", data);
+                localStorage.clear();
+                localStorage.setItem("orderId", data.orderId);
+
+                document.location.href = 'confirmation.html?id=' + data.orderId
+            })
+            .catch((err) => {
+                alert("Erreur Fetch" + err.message);
+            });
+    })
 }
 
 deleteProduct();
 afficherPanier();
 addVerificationListernerToForm();
 commanderLePanier();
+addOnChangeListenerToQuantityInputs();
