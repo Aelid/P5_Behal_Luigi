@@ -58,10 +58,10 @@ function addArticleToDom(article){
     }
     addToCart(article);
 }
+
 // Gestion du panier
 function addToCart(article) {
     const btn_envoyerPanier = document.querySelector("#addToCart");
-
 // Ecouter le panier avec comme condition couleur non nulle et la quantité entre 1 et 100
     btn_envoyerPanier.addEventListener("click", (event)=>{
         if (quantityPicked.value > 0 && quantityPicked.value <=100 && quantityPicked.value != 0){
@@ -73,16 +73,17 @@ function addToCart(article) {
     let choixQuantite = quantityPicked.value;
 
 // Recupération des options de l'article a mettre dans le panier
-    let optionsProduit = {
+    let optionsProduit = { 
         idProduit: idProduct,
         couleurProduit: choixCouleur,
         quantiteProduit: Number(choixQuantite),
         nomProduit: article.name,
-        prixProduit: article.price,
         descriptionProduit: article.description,
         imgProduit: article.imageUrl,
-        altImgProduit: article.altTxt
-    };
+        altImgProduit: article.altTxt,
+    }; 
+    const price = new URL(window.location.href).searchParams.get("article.price");
+    console.log(price);           
 // Initialisation du local storage
     let produitLocalStorage = JSON.parse(localStorage.getItem("produit"));
 // fenêtre pop-up
