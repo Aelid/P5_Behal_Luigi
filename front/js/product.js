@@ -86,10 +86,8 @@ function addToCart(article) {
 // Initialisation du local storage
             let produitLocalStorage = JSON.parse(localStorage.getItem("produit"));
 // fenêtre pop-up
-            const popupConfirmation = () => {
-                if (window.confirm(`Votre commande de ${choixQuantite} ${article.name} ${choixCouleur} est ajoutée au panier, veuillez cliquer sur OK`)) {
-                    window.location.href = "cart.html";
-                }
+            if (window.confirm(`Votre commande de ${choixQuantite} ${article.name} ${choixCouleur} est ajoutée au panier, veuillez cliquer sur OK`) !== true){
+                    return;
             }
 // Importation dans le local storage si le panier a un article
             if (produitLocalStorage) {
@@ -104,7 +102,6 @@ function addToCart(article) {
                     console.log("Le produit est dans le localsotrage", optionsProduit);
                     localStorage.setItem("produit", JSON.stringify(produitLocalStorage));
                     console.table(produitLocalStorage);
-                    popupConfirmation();
 
                     // Si le produit en question n'est pas dans le panier
                 } else {
@@ -112,7 +109,6 @@ function addToCart(article) {
                     produitLocalStorage.push(optionsProduit);
                     localStorage.setItem("produit", JSON.stringify(produitLocalStorage));
                     console.table(produitLocalStorage);
-                    popupConfirmation();
                 }
 
                 // Si le panier est vide
@@ -121,8 +117,8 @@ function addToCart(article) {
                 produitLocalStorage.push(optionsProduit);
                 localStorage.setItem("produit", JSON.stringify(produitLocalStorage));
                 console.table(produitLocalStorage);
-                popupConfirmation();
             }
+            window.location.href = "cart.html";
         }
     });
 }
